@@ -1,8 +1,19 @@
 import streamlit as st
 import numpy as np
-from skyfield.api import Loader, EarthSatellite
-from orbit import load_tles_from_celestrak, satellite_ecet_position
-from visualization import make_earth_surface, satellite_trace, build_figure
+
+from skyfield.api import (
+    Loader,
+    EarthSatellite)
+
+from orbit import (
+    load_tles_from_celestrak,
+    satellite_ecet_position,
+    satellite_gcrs_position)
+
+from visualization import (
+    make_earth_surface,
+    satellite_trace,
+    build_figure)
 
 load = Loader('satellite_viewer/data')
 ts = load.timescale()
@@ -80,13 +91,16 @@ def main():
                                                        "other"
                                                        ])
     elif query == "CATNR":
-        group = st.select_slider("Catalogue Number",
-                                 options=["1", "2", "3",
-                                          "4", "5", "6",
-                                          "7", "8", "9"],
-                                 )
+        group = str(st.number_input("Catalogue Number (0 to 9 digits)",
+                                    0,
+                                    999999999,
+                                    25544
+                                    )
+                    )
     elif query == "INTDES":
-        group = st.text_input("International Designator (yyyy-nnn)")
+        group = st.text_input("International Designator (yyyy-nnn)",
+                              "1998-067A"
+                              )
     elif query == "NAME":
         group = st.text_input("Satellite Name", "METEOSAT-10")
     elif query == "SPECIAL":
@@ -106,18 +120,37 @@ def main():
     if realtime:
         t0 = ts.now()
     else:
-        minutes = st.slider("Minutes from now", -60, 60, 0)
+        minutes = st.slider("Minutes from now (+- 48 hours)",
+                            -2*24*60,
+                            2*24*60,
+                            0)
         t0 = ts.now() + minutes / (24 * 60)
 
     sat = sats[selected_name]
 
-    t_half = int(st.slider("orbit time window in hours (max. 7 days)", 0, 7*24)/2)*60
+    t_orbit = st.slider(
+        "orbit time window into future in minutes (max. 48 hours)",
+        0,
+        2*24*60)
 
     # generate times around t for orbit path
-    orbit_minutes = np.linspace(-t_half, t_half, t_half*2+1)
+    orbit_minutes = (
+      np.array([0.0])
+      if t_orbit == 0
+      else np.linspace(0, t_orbit, t_orbit + 1)
+    )
+
     times = t0 + orbit_minutes / (24 * 60)
 
-    x, y, z = satellite_ecet_position(sat, times)
+    coord_system = st.selectbox("Select coordinate system",
+                                ["Earth centered (GCRS)",
+                                 "Earth centered & fixed (ECEF)"]
+                                )
+
+    if coord_system == "Earth centered (GCRS)":
+        x, y, z = satellite_gcrs_position(sat, times)
+    else:
+        x, y, z = satellite_ecet_position(sat, times)
 
     earth_surface = make_earth_surface()
     sat_tr = satellite_trace(x, y, z, selected_name)

@@ -1,6 +1,5 @@
 import numpy as np
 from skyfield.api import Loader, EarthSatellite, wgs84
-from astropy import constants as const
 import csv
 
 from typing import Any
@@ -24,17 +23,24 @@ def download_tles_from_celestrak(VALUE: str,
                                  FORMAT_VALUE: str = "CSV",
                                  ) -> str:
     """
-    Downloads TLE data from CelesTrak based on query parameters if not already present or older than max_days.
+    Downloads TLE data from CelesTrak based on query parameters
+    if not already present or older than max_days.
 
-    For exact usage, see https://www.celestrak.org/NORAD/documentation/gp-data-formats.php
+    For exact usage, see
+        https://www.celestrak.org/NORAD/documentation/gp-data-formats.php
 
-    Format: https://celestrak.org/NORAD/elements/gp.php?{QUERY}=VALUE[&FORMAT=VALUE]
+    Format:
+        https://celestrak.org/NORAD/elements/gp.php?{QUERY}=VALUE[&FORMAT=VALUE]
 
-    :param VALUE: For QUERY "GROUP": GP Data set, such as "stations" for Space Stations, "weather" for weather satellites, "GNSS" for Global Navigation Satellite Systems, etc.
+    :param VALUE: For QUERY "GROUP": GP Data set, such as "stations" for
+        Space Stations, "weather" for weather satellites,
+        "GNSS" for Global Navigation Satellite Systems, etc.
     :type VALUE: str
     :param FORMAT: Desired format, one of "TLE", "CSV", "JSON", "XML", etc.
     :type FORMAT: str
-    :param QUERY: Catalog Number (1 to 9 digits) "CATNR", International Designator (yyyy-nnn) "INTDES", "GROUP", Satellite Name "NAME", "SPECIAL"
+    :param QUERY: Catalog Number (1 to 9 digits) "CATNR", International
+        Designator (yyyy-nnn) "INTDES", "GROUP", Satellite Name "NAME",
+        "SPECIAL"
     :type QUERY: str
     :return: Filename where data is stored
     :rtype: str
@@ -59,9 +65,13 @@ def load_tles_from_celestrak(group: str = "GNSS",
     """
     Loads TLE data from CelesTrak based on group and query parameters.
 
-    :param group: if QUERY = GROUP then GP Data set, such as "stations" for Space Stations, "weather" for weather satellites, "GNSS" for Global Navigation Satellite Systems, etc.
+    :param group: if QUERY = GROUP then GP Data set, such as "stations" for
+        Space Stations, "weather" for weather satellites, "GNSS" for Global
+        Navigation Satellite Systems, etc.
     :type group: str
-    :param QUERY: defautl = "GROUP". Other options: Catalog Number (1 to 9 digits) "CATNR", International Designator (yyyy-nnn) "INTDES", "GROUP", Satellite Name "NAME", "SPECIAL"
+    :param QUERY: defautl = "GROUP". Other options: Catalog Number (1 to 9
+        digits) "CATNR", International Designator (yyyy-nnn) "INTDES", "GROUP",
+        Satellite Name "NAME", "SPECIAL"
     :type QUERY: str
     :return: satellites
     :rtype: list[Any]
@@ -102,13 +112,32 @@ def satellite_ecet_position(sat: EarthSatellite, time) -> tuple[Any, Any, Any]:
     lon = lo.radians
     alt_km = wgs84.height_of(geocentric).km
 
-    EARTH_RADIUS_KM = const.R_earth.to('km').value
+    EARTH_RADIUS_KM = 6371.0  # km
     r_orbit = EARTH_RADIUS_KM + alt_km
 
     x = r_orbit * np.cos(lat) * np.cos(lon)
     y = r_orbit * np.cos(lat) * np.sin(lon)
     z = r_orbit * np.sin(lat)
 
+    return x, y, z
+
+
+def satellite_gcrs_position(sat: EarthSatellite, time) -> tuple[Any, Any, Any]:
+    """
+    Returns the satellite position in an Earth fixed frame (WGS84),
+    as (x,y,z) in km where Earth is centered at (0,0,0) and non-rotating in
+    that frame.
+
+    :param sat: EarthSatellite object
+    :type sat: EarthSatellite
+    :param time: time object from skyfield
+    :type time: skyfield.timelib.Time
+    :return: position (x,y,z) in km
+    :rtype: np.ndarray
+    """
+
+    geocentric = sat.at(time)
+    x, y, z = geocentric.xyz.km
     return x, y, z
 
 
