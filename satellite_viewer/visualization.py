@@ -7,7 +7,8 @@ EARTH_RADIUS_KM = 6371.0
 
 
 def make_earth_surface(
-        texture_path: str = "satellite_viewer/bluemarble-2048.png"
+        texture_path: str = "./satellite_viewer/bluemarble-2048.png",
+        rotation_matrix: np.ndarray | None = None,
         ) -> go.Mesh3d:
 
     # Parameterize the sphere
@@ -33,6 +34,16 @@ def make_earth_surface(
     xv = x.reshape(-1)
     yv = y.reshape(-1)
     zv = z.reshape(-1)
+
+    # Rotate the Earth mesh into another frame
+    if rotation_matrix is not None:
+        xyz = np.vstack([xv, yv, zv])
+
+        # Note for future: if earth rotates the wrong way
+        # round transpose matrix
+        xyz_rot = rotation_matrix.T @ xyz
+        xv, yv, zv = xyz_rot[0], xyz_rot[1], xyz_rot[2]
+
     rgbv = rgb.reshape(-1, 3)
     vertex_colors = [f"rgb({r},{g},{b})" for r, g, b in rgbv]
 
@@ -67,14 +78,49 @@ def satellite_trace(x, y, z, name, show_path=True) -> go.Scatter3d:
     return go.Scatter3d(
         x=x, y=y, z=z,
         mode='lines+markers' if show_path else 'markers',
-        marker=dict(size=3),
+        marker=dict(size=2),
         name=name
     )
 
 
-def build_figure(earth_surface, sat_traces) -> go.Figure:
-    fig = go.Figure(data=[earth_surface] + sat_traces)
+def satellite_current(x, y, z, name, show_cur_pos=True, glow=True, mark_size=2, mark_color="crimson") -> list[go.Scatter3d]:
+    traces: list[go.Scatter3d] = []
+
+    if glow:
+        traces.append(
+            go.Scatter3d(
+                x=[x], y=[y], z=[z],
+                mode='markers',
+                marker=dict(size=int(mark_size + 1), color="rgba(220,20,60,0.20)"),
+                hoverinfo="skip",
+                showlegend=False,
+                name=f"{name} (glow)"
+            )
+        )
+
+    traces.append(
+        go.Scatter3d(
+            x=[x], y=[y], z=[z],
+            mode='markers',
+            marker=dict(size=mark_size, color=mark_color, line=dict(width=3, color="rgba(220,20,60,0.20)")),
+            showlegend=False,
+            name=f"{name} (current)"
+        )
+    )
+
+    return traces
+
+
+def build_figure(earth_surface, sat_traces, sat_cur=None) -> go.Figure:
+    data = [earth_surface] + [sat_traces]
+
+    if sat_cur is not None:
+        data += sat_cur
+
+    fig = go.Figure(data=data)
     fig.update_layout(
+        paper_bgcolor="black",
+        plot_bgcolor="black",
         scene=dict(
             aspectmode="data",
             xaxis=dict(visible=False),
