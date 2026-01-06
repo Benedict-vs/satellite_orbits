@@ -1,7 +1,8 @@
 # 3D Satellite Orbits
 
-*Simple setup:*
-All comands to be run from root folder 
+**Simple setup:**
+
+*All comands to be run from root folder*
 
     pip install -r requirements.txt
     streamlit run satellite_viewer/app.py
