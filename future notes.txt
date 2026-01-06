@@ -1,0 +1,102 @@
+README
+
+# 3D Satellite Orbits
+
+Interactive **3D satellite orbit viewer** built with **Streamlit + Plotly**. Visualizes a textured Earth, the satellite’s orbit track, and live telemetry like subpoint and altitude.
+
+---
+
+## Prerequisites
+
+To run locally from a GitHub ZIP download, you need:
+- **Python 3.10+** installed (includes `pip` in most installs)
+- Basic **terminal/command prompt** usage
+
+---
+
+## Quick start (recommended)
+
+### macOS / Linux
+```bash
+# from the repo root folder
+chmod +x scripts/run.sh
+./scripts/run.sh
+```
+
+### Windows
+1. Double-click:
+   - `scripts\run.bat`
+2. Or run in PowerShell:
+```powershell
+.\scripts\run.ps1
+```
+
+> Note: If PowerShell blocks scripts, run PowerShell as admin once and execute:
+> `Set-ExecutionPolicy RemoteSigned`
+
+---
+
+## Manual run (if you prefer)
+
+```bash
+python -m venv .venv
+# macOS/Linux:
+source .venv/bin/activate
+# Windows PowerShell:
+# .\.venv\Scripts\Activate.ps1
+
+pip install -r requirements.txt
+streamlit run satellite_viewer/app.py
+```
+
+---
+
+## Docker (optional)
+
+```bash
+docker compose up --build
+```
+
+Open: http://localhost:8501
+
+
+run.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+fi
+
+if [ ! -d ".venv" ]; then
+  "$PYTHON_BIN" -m venv .venv
+fi
+
+# shellcheck disable=SC1091
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+exec streamlit run satellite_viewer/app.py
+
+run.ps1
+$ErrorActionPreference = "Stop"
+
+$Root = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $Root
+
+if (-not (Test-Path ".venv")) {
+    python -m venv .venv
+}
+
+& ".\.venv\Scripts\Activate.ps1"
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+streamlit run "satellite_viewer/app.py"
