@@ -1,3 +1,4 @@
-astropy==7.2.0
-numpy==2.3.5
-pyvista==0.46.4
+numpy==2.4.0
+plotly==6.5.0
+skyfield==1.53
+streamlit==1.52.2
