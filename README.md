@@ -3,10 +3,9 @@
 *Simple setup:*
 All comands to be run from root folder 
 
-'''
-pip install -r requirements.txt\n
-streamlit run satellite_viewer/app.py
-'''
+    pip install -r requirements.txt
+    streamlit run satellite_viewer/app.py
+
 
 ## Python files + explanation
 
