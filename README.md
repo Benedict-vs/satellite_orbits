@@ -12,7 +12,8 @@ possible bugs:
 version 1: use plotly to render Earth with an Earth texture. Orbits and satellite positions create with Scatter3d
 
 future versions:
-- add Earth texture
+- (done) add Earth texture 
+- get orbit time, always display entire orbit, hightligh current position
 - make sure satellite position corresponds to earth texture
 - add Earth rotation (already implemented since ECET coordinat system is used)
 - add information box with satellite information (Name, etc.) - aka. legend
