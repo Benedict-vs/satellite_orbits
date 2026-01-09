@@ -111,11 +111,11 @@ def satellite_current(x, y, z, name, show_cur_pos=True, glow=True, mark_size=2, 
     return traces
 
 
-def build_figure(earth_surface, sat_traces, sat_cur=None) -> go.Figure:
-    data = [earth_surface] + [sat_traces]
+def build_figure(earth_surface: go.Mesh3d, *arg: list[go.Scatter3d]) -> go.Figure:
+    data = [earth_surface]
 
-    if sat_cur is not None:
-        data += sat_cur
+    for args in arg:
+        data += args
 
     fig = go.Figure(data=data)
     fig.update_layout(
