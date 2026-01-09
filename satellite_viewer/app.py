@@ -129,6 +129,49 @@ def main():
     # Live info box (updates every second)
     info_placeholder = st.empty()
 
+    t_orbit = st.slider(
+        "Future orbit time window in minutes (max. 48 hours)",
+        0,
+        2*24*60) * 60  # multiply with 60 for seconds
+
+    # generate times around t for orbit path
+    orbit_seconds = (
+      np.array([0.0]) if t_orbit == 0 else np.linspace(0, t_orbit, t_orbit + 1)
+    )
+
+    use_cur_time = st.checkbox("Use current time (UTC): ", value=True)
+
+    selected_time = None
+    if not use_cur_time:
+        selected_datetime = st.datetime_input("Enter time (UTC)")
+        if selected_datetime is not None:
+            if selected_datetime.tzinfo is None:
+                selected_datetime = selected_datetime.replace(tzinfo=utc)
+            else:
+                selected_datetime = selected_datetime.astimezone(utc)
+            selected_time = ts.utc(selected_datetime)
+
+    t0 = ts.now() if selected_time is None else selected_time
+    times = t0 + orbit_seconds / (24 * 60 * 60)
+
+    coord_system = st.selectbox("Select coordinate system",
+                                ["Earth centered & fixed (ECEF)",
+                                 "Earth centered (ECI)"]
+                                )
+
+    if coord_system == "Earth centered (ECI)":
+        x, y, z = satellite_eci_position(sat, times)
+        earth_surface = make_earth_surface(
+            rotation_matrix=itrs.rotation_at(times[0]))
+    else:
+        x, y, z = satellite_ecef_position(sat, times)
+        earth_surface = make_earth_surface()
+
+    chart_placeholder = st.empty()
+
+    # Get 3d Scatter plot of satellite trace
+    sat_tr = [satellite_trace(x, y, z, selected_name)]
+
     @st.fragment(run_every="1s")
     def live_info_box():
         # Display current local time (Europe/London)
@@ -163,49 +206,6 @@ def main():
             icon="ℹ️",
         )
 
-    t_orbit = st.slider(
-        "Future orbit time window in minutes (max. 48 hours)",
-        0,
-        2*24*60) * 60  # multiply with 60 for seconds
-
-    # generate times around t for orbit path
-    orbit_seconds = (
-      np.array([0.0]) if t_orbit == 0 else np.linspace(0, t_orbit, t_orbit + 1)
-    )
-
-    use_cur_time = st.checkbox("Use current time (UTC): ", value=True)
-
-    selected_time = None
-    if not use_cur_time:
-        selected_datetime = st.datetime_input("Enter time (UTC)")
-        if selected_datetime is not None:
-            if selected_datetime.tzinfo is None:
-                selected_datetime = selected_datetime.replace(tzinfo=utc)
-            else:
-                selected_datetime = selected_datetime.astimezone(utc)
-            selected_time = ts.utc(selected_datetime)
-
-    t0 = ts.now() if selected_time is None else selected_time
-    times = t0 + orbit_seconds / (24 * 60 * 60)
-
-    coord_system = st.selectbox("Select coordinate system",
-                                ["Earth centered (ECI)",
-                                 "Earth centered & fixed (ECEF)"]
-                                )
-
-    if coord_system == "Earth centered (ECI)":
-        x, y, z = satellite_eci_position(sat, times)
-        earth_surface = make_earth_surface(
-            rotation_matrix=itrs.rotation_at(times[0]))
-    else:
-        x, y, z = satellite_ecef_position(sat, times)
-        earth_surface = make_earth_surface()
-
-    chart_placeholder = st.empty()
-
-    # Get 3d Scatter plot of satellite trace
-    sat_tr = satellite_trace(x, y, z, selected_name)
-
     @st.fragment(run_every="60s")
     def live_plot():
         t_marker = ts.now() if selected_time is None else times[0]
@@ -218,13 +218,17 @@ def main():
         sat_cur = satellite_current(x_cur, y_cur, z_cur, selected_name)
 
         if use_cur_time:
-            fig = build_figure(earth_surface, sat_tr, sat_cur)
+            if t_orbit == 0:
+                fig = build_figure(earth_surface, sat_cur)
+            else:
+                fig = build_figure(earth_surface, sat_tr, sat_cur)
         else:
             fig = build_figure(earth_surface, sat_tr)
         chart_placeholder.plotly_chart(fig, width="stretch")
 
-    live_plot()
     live_info_box()
+    live_plot()
+    
 
 
 if __name__ == "__main__":
